@@ -30,6 +30,12 @@ $(SML_LIB)/basis/basis.mlb
 ../sml-asn1/asn1.sig
 ../sml-asn1/asn1.sml
 
+(* 3b. sml-p256: NIST P-256 ECDH + ECDSA (BigInt/Asn1/Sha256 already loaded). *)
+(* Include only p256.sig/p256.sml (not sml-p256's own sources.mlb) so the   *)
+(* shared deps codec/bigint/asn1 are not redefined. Wired at J1.            *)
+../sml-p256/p256.sig
+../sml-p256/p256.sml
+
 (* 4. sml-pem: PEM codec, depends on sml-codec (already loaded). *)
 ../sml-pem/pem.sig
 ../sml-pem/pem.sml
@@ -68,18 +74,24 @@ $(SML_LIB)/basis/basis.mlb
 ../sml-x509/x509.sig
 ../sml-x509/x509.sml
 
-(* 12. sml-tls: TLS 1.3, the library itself. *)
+(* 12. sml-tls: TLS 1.3 signatures + the early structures (TlsRecord,
+       TlsAlert, TlsHandshake, TlsKeySchedule). The handshake state machine
+       (TlsClient/TlsServer/Tls) lives in tlsstate.sml and loads last,
+       AFTER the track modules it integrates at J1. *)
 tls.sig
 tls.sml
 
-(* 13. Track stubs (Phase 0 interface freeze). These reference TlsRecord /
-       TlsAlert / TlsHandshake types defined in tls.sml, so they MUST come
-       after tls.sml. Bodies are `raise Fail "todo: A1|A2|A3"`; the
-       per-track subagents fill them in. The J1 integrator later wires
-       them into TlsClient.step / TlsServer.step. *)
+(* 13. Track modules (A1/A2/A3). These reference TlsRecord / TlsAlert /
+       TlsHandshake / TlsKeySchedule defined in tls.sml, so they come after
+       tls.sml -- but BEFORE tlsstate.sml, which calls into them at J1. *)
 recordprotect.sig
 recordprotect.sml
 certverify.sig
 certverify.sml
 extensions.sig
 extensions.sml
+
+(* 14. sml-tls state machine (J1 integration): TlsClient / TlsServer / Tls.
+       Loads last so it can call TlsRecordProtect (A1), TlsCertVerify (A2),
+       TlsExtensions (A3), and P256 (A4). *)
+tlsstate.sml

@@ -16,11 +16,57 @@ sig
   type keyShareEntry = {group : Word16.word, keyExchange : string}
 
   (* ---- key_share (§4.2.8) ----
-     CH carries a list; SH/HRR carry a single selected entry. *)
+     CH carries a list; SH carries a single selected entry; the
+     HelloRetryRequest form carries only the server's `selected_group`
+     (2 bytes, no key). *)
   val encodeKeyShareCH : keyShareEntry list -> string
   val decodeKeyShareCH : string -> keyShareEntry list option
   val encodeKeyShareSH : keyShareEntry -> string
   val decodeKeyShareSH : string -> keyShareEntry option
+  (* HRR key_share body: just the 2-byte selected_group (§4.1.4). *)
+  val encodeKeyShareHRR : Word16.word -> string
+  val decodeKeyShareHRR : string -> Word16.word option
+
+  (* ---- cookie (§4.2.2) ----
+     A single opaque<1..2^16-1>: a 2-byte length prefix then the bytes.
+     The server may send a cookie in a HelloRetryRequest; the client
+     echoes it verbatim in ClientHello2. *)
+  val encodeCookie : string -> string
+  val decodeCookie : string -> string option
+
+  (* ---- psk_key_exchange_modes (§4.2.9) ----
+     1-byte list length then 1-byte modes (0 = psk_ke, 1 = psk_dhe_ke). *)
+  val pskModeKe    : Word8.word   (* 0 *)
+  val pskModeDheKe : Word8.word   (* 1 *)
+  val encodePskKeyExchangeModes : Word8.word list -> string
+  val decodePskKeyExchangeModes : string -> Word8.word list option
+
+  (* ---- early_data (§4.2.10) ----
+     Empty body in ClientHello/EncryptedExtensions; a uint32
+     max_early_data_size in a NewSessionTicket. *)
+  val encodeEarlyDataEmpty : string                       (* "" *)
+  val encodeEarlyDataMaxSize : Word32.word -> string
+  val decodeEarlyDataMaxSize : string -> Word32.word option
+
+  (* ---- pre_shared_key (§4.2.11) ----
+     A PSK identity: the opaque ticket bytes plus the obfuscated ticket
+     age (uint32). *)
+  type pskIdentity = {identity : string, obfuscatedTicketAge : Word32.word}
+  (* The ClientHello body WITHOUT the binders, plus the binder list,
+     encoded separately so the binder MAC can be computed over the
+     partial transcript (the ClientHello up to and including the
+     identities, §4.2.11.2). `encodeOfferedPsksHead` is identities +
+     the 2-byte binders-list-length prefix only; `binderListBody` is the
+     concatenated 1-byte-prefixed binder entries (without the outer
+     2-byte length). The full extension data is head ^ binderListBody. *)
+  val encodeOfferedPsksIdentities : pskIdentity list -> string
+  val binderListLength : string list -> int
+  val encodeBinderList : string list -> string
+  (* SH form: the 2-byte selected_identity index. *)
+  val encodeSelectedIdentity : Word16.word -> string
+  val decodeSelectedIdentity : string -> Word16.word option
+  (* Decode an OfferedPsks body into (identities, binders). *)
+  val decodeOfferedPsks : string -> (pskIdentity list * string list) option
 
   (* ---- supported_versions (§4.2.1) ----
      CH carries a list; SH carries a single selected version. *)

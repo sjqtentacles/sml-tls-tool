@@ -25,7 +25,8 @@ val () =
                  x25519PrivateKey = dummyKey, clientRandom = dummyRnd,
                  legacySessionId = "",
                  cipherSuites = [TlsHandshake.suiteTlsAes128GcmSha256]}
-              handle e => err ("socket_shim: " ^ exnMessage e);
+              handle SocketShim.Shim m => err ("socket_shim: Shim: " ^ m)
+                   | e => err ("socket_shim: " ^ exnMessage e);
               OS.Process.exit OS.Process.success)
          | NONE => err "bad port")
   | ["server", portStr] =>

@@ -1,0 +1,29 @@
+(* Source files for sml-p256, in dependency order. Pulls in the vendored
+   crypto family (sml-codec, sml-bigint, sml-asn1) each exactly once, then
+   the P-256 sources.
+
+   Dependency DAG:
+     codec  -> p256           (SHA-256 for ECDSA)
+     bigint -> {asn1, p256}   (field/scalar arithmetic; DER INTEGER (r,s))
+     asn1  -> p256            (DER SEQUENCE { INTEGER r, INTEGER s })
+
+   Each shared dep is included along a single path so there are no
+   duplicate structure definitions. The vendored dep sources are brought
+   in WITHOUT a `local` wrapper so the test suite can use Sha256 / BigInt
+   / Asn1 alongside P256. *)
+
+$(SML_LIB)/basis/basis.mlb
+
+(* 1. sml-codec: Base16/64, CRC32, SHA-1/256/512. The leaf of the DAG. *)
+../sml-codec/sources.mlb
+
+(* 2. sml-bigint: arbitrary-precision integers, no deps. *)
+../sml-bigint/sources.mlb
+
+(* 3. sml-asn1: DER, depends on BigInt (already loaded). *)
+../sml-asn1/asn1.sig
+../sml-asn1/asn1.sml
+
+(* 4. sml-p256: NIST P-256 ECDH + ECDSA, depends on BigInt/Asn1/Sha256. *)
+p256.sig
+p256.sml

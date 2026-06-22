@@ -124,60 +124,64 @@ struct
     | NoApplicationProtocol
     | Other of Word8.word
 
+  (* RFC 8446 §6.2 alert description codes (decimal). NOTE: write every
+     value in decimal -- mixing `0wNN` (decimal) and `0wxNN` (hex) literals
+     here previously mis-encoded a dozen alerts (e.g. protocol_version as
+     46 instead of 70, colliding with certificate_unknown). *)
   fun alertDescriptionToByte CloseNotify             = 0w0
     | alertDescriptionToByte UnexpectedMessage       = 0w10
     | alertDescriptionToByte BadRecordMac           = 0w20
     | alertDescriptionToByte RecordOverflow         = 0w22
-    | alertDescriptionToByte HandshakeFailure       = 0wx28
-    | alertDescriptionToByte BadCertificate         = 0wx2A
-    | alertDescriptionToByte UnsupportedCertificate = 0wx2B
-    | alertDescriptionToByte CertificateRevoked     = 0wx2C
-    | alertDescriptionToByte CertificateExpired     = 0wx2D
-    | alertDescriptionToByte CertificateUnknown     = 0wx2E
-    | alertDescriptionToByte IllegalParameter       = 0wx2F
-    | alertDescriptionToByte UnknownCa              = 0w30
-    | alertDescriptionToByte AccessDenied           = 0w31
-    | alertDescriptionToByte DecodeError            = 0w32
-    | alertDescriptionToByte DecryptError           = 0w33
-    | alertDescriptionToByte ProtocolVersion        = 0w46
-    | alertDescriptionToByte InsufficientSecurity   = 0w47
-    | alertDescriptionToByte InternalError          = 0w50
-    | alertDescriptionToByte UserCancelled          = 0wx5A
-    | alertDescriptionToByte MissingExtension       = 0wx6D
-    | alertDescriptionToByte UnsupportedExtension   = 0wx6E
-    | alertDescriptionToByte UnrecognizedName       = 0w70
-    | alertDescriptionToByte BadCertificateStatus   = 0w71
-    | alertDescriptionToByte UnknownPskIdentity     = 0w73
-    | alertDescriptionToByte CertificateRequired    = 0w74
-    | alertDescriptionToByte NoApplicationProtocol  = 0w78
+    | alertDescriptionToByte HandshakeFailure       = 0w40
+    | alertDescriptionToByte BadCertificate         = 0w42
+    | alertDescriptionToByte UnsupportedCertificate = 0w43
+    | alertDescriptionToByte CertificateRevoked     = 0w44
+    | alertDescriptionToByte CertificateExpired     = 0w45
+    | alertDescriptionToByte CertificateUnknown     = 0w46
+    | alertDescriptionToByte IllegalParameter       = 0w47
+    | alertDescriptionToByte UnknownCa              = 0w48
+    | alertDescriptionToByte AccessDenied           = 0w49
+    | alertDescriptionToByte DecodeError            = 0w50
+    | alertDescriptionToByte DecryptError           = 0w51
+    | alertDescriptionToByte ProtocolVersion        = 0w70
+    | alertDescriptionToByte InsufficientSecurity   = 0w71
+    | alertDescriptionToByte InternalError          = 0w80
+    | alertDescriptionToByte UserCancelled          = 0w90
+    | alertDescriptionToByte MissingExtension       = 0w109
+    | alertDescriptionToByte UnsupportedExtension   = 0w110
+    | alertDescriptionToByte UnrecognizedName       = 0w112
+    | alertDescriptionToByte BadCertificateStatus   = 0w113
+    | alertDescriptionToByte UnknownPskIdentity     = 0w115
+    | alertDescriptionToByte CertificateRequired    = 0w116
+    | alertDescriptionToByte NoApplicationProtocol  = 0w120
     | alertDescriptionToByte (Other w)              = w
 
   fun byteToAlertDescription 0w0  = CloseNotify
     | byteToAlertDescription 0w10 = UnexpectedMessage
     | byteToAlertDescription 0w20 = BadRecordMac
     | byteToAlertDescription 0w22 = RecordOverflow
-    | byteToAlertDescription 0wx28 = HandshakeFailure
-    | byteToAlertDescription 0wx2A = BadCertificate
-    | byteToAlertDescription 0wx2B = UnsupportedCertificate
-    | byteToAlertDescription 0wx2C = CertificateRevoked
-    | byteToAlertDescription 0wx2D = CertificateExpired
-    | byteToAlertDescription 0wx2E = CertificateUnknown
-    | byteToAlertDescription 0wx2F = IllegalParameter
-    | byteToAlertDescription 0w30 = UnknownCa
-    | byteToAlertDescription 0w31 = AccessDenied
-    | byteToAlertDescription 0w32 = DecodeError
-    | byteToAlertDescription 0w33 = DecryptError
-    | byteToAlertDescription 0w46 = ProtocolVersion
-    | byteToAlertDescription 0w47 = InsufficientSecurity
-    | byteToAlertDescription 0w50 = InternalError
-    | byteToAlertDescription 0wx5A = UserCancelled
-    | byteToAlertDescription 0wx6D = MissingExtension
-    | byteToAlertDescription 0wx6E = UnsupportedExtension
-    | byteToAlertDescription 0w70 = UnrecognizedName
-    | byteToAlertDescription 0w71 = BadCertificateStatus
-    | byteToAlertDescription 0w73 = UnknownPskIdentity
-    | byteToAlertDescription 0w74 = CertificateRequired
-    | byteToAlertDescription 0w78 = NoApplicationProtocol
+    | byteToAlertDescription 0w40 = HandshakeFailure
+    | byteToAlertDescription 0w42 = BadCertificate
+    | byteToAlertDescription 0w43 = UnsupportedCertificate
+    | byteToAlertDescription 0w44 = CertificateRevoked
+    | byteToAlertDescription 0w45 = CertificateExpired
+    | byteToAlertDescription 0w46 = CertificateUnknown
+    | byteToAlertDescription 0w47 = IllegalParameter
+    | byteToAlertDescription 0w48 = UnknownCa
+    | byteToAlertDescription 0w49 = AccessDenied
+    | byteToAlertDescription 0w50 = DecodeError
+    | byteToAlertDescription 0w51 = DecryptError
+    | byteToAlertDescription 0w70 = ProtocolVersion
+    | byteToAlertDescription 0w71 = InsufficientSecurity
+    | byteToAlertDescription 0w80 = InternalError
+    | byteToAlertDescription 0w90 = UserCancelled
+    | byteToAlertDescription 0w109 = MissingExtension
+    | byteToAlertDescription 0w110 = UnsupportedExtension
+    | byteToAlertDescription 0w112 = UnrecognizedName
+    | byteToAlertDescription 0w113 = BadCertificateStatus
+    | byteToAlertDescription 0w115 = UnknownPskIdentity
+    | byteToAlertDescription 0w116 = CertificateRequired
+    | byteToAlertDescription 0w120 = NoApplicationProtocol
     | byteToAlertDescription w    = Other w
 
   type alert = {level : alertLevel, description : alertDescription}
@@ -224,7 +228,7 @@ struct
     | handshakeTypeToByte Certificate          = 0w11
     | handshakeTypeToByte CertificateRequest   = 0w13
     | handshakeTypeToByte CertificateVerify    = 0w15
-    | handshakeTypeToByte Finished             = 0w14
+    | handshakeTypeToByte Finished             = 0w20  (* 0x14 *)
     | handshakeTypeToByte KeyUpdate            = 0w24
     | handshakeTypeToByte MessageHash          = 0w254
 
@@ -236,7 +240,7 @@ struct
     | byteToHandshakeType 0w11  = SOME Certificate
     | byteToHandshakeType 0w13  = SOME CertificateRequest
     | byteToHandshakeType 0w15  = SOME CertificateVerify
-    | byteToHandshakeType 0w14  = SOME Finished
+    | byteToHandshakeType 0w20  = SOME Finished  (* 0x14 *)
     | byteToHandshakeType 0w24  = SOME KeyUpdate
     | byteToHandshakeType 0w254 = SOME MessageHash
     | byteToHandshakeType _     = NONE
@@ -310,7 +314,6 @@ struct
         val total = Word16.toInt (bytesToWord16
           (Byte.charToByte (String.sub (s, 0)), Byte.charToByte (String.sub (s, 1))))
         exception Bad
-        val _ = if String.size s < 2 + total then raise Bad else ()
         fun loop (i, acc) =
           if i >= 2 + total then SOME (List.rev acc)
           else
@@ -329,7 +332,8 @@ struct
                   in loop (i + 4 + dl, {extType = et, data = d} :: acc) end
               end
       in
-        loop (2, []) handle Bad => NONE
+        if String.size s < 2 + total then NONE
+        else (loop (2, []) handle Bad => NONE)
       end
 
   val extServerName          : Word16.word = 0wx0000
@@ -337,6 +341,19 @@ struct
   val extSignatureAlgorithms : Word16.word = 0wx000D
   val extSupportedVersions   : Word16.word = 0wx002B
   val extKeyShare            : Word16.word = 0wx0033
+  val extPreSharedKey        : Word16.word = 0wx0029
+  val extEarlyData           : Word16.word = 0wx002A
+  val extCookie              : Word16.word = 0wx002C
+  val extPskKeyExchangeModes : Word16.word = 0wx002D
+
+  (* SHA-256("HelloRetryRequest") -- RFC 8446 §4.1.3. *)
+  val helloRetryRequestRandom : string =
+    String.implode (List.map Char.chr [
+      0xCF, 0x21, 0xAD, 0x74, 0xE5, 0x9A, 0x61, 0x11,
+      0xBE, 0x1D, 0x8C, 0x02, 0x1E, 0x65, 0xB8, 0x91,
+      0xC2, 0xA2, 0x11, 0x16, 0x7A, 0xBB, 0x8C, 0x5E,
+      0x07, 0x9E, 0x09, 0xE2, 0xC8, 0xA8, 0x33, 0x9C
+    ])
 
   (* ---- ClientHello (§4.1.2) ---- *)
   type clientHello = {
@@ -533,8 +550,10 @@ struct
 
   fun encodeCertificate {certificateRequestContext, certificateList} =
     let
+      (* RFC 8446 sec 4.4.2: certificate_request_context is opaque<0..2^8-1>,
+         i.e. a SINGLE-byte length prefix (not 3 bytes). *)
       val ctxLen = String.size certificateRequestContext
-      val ctx = len3 ctxLen ^ certificateRequestContext
+      val ctx = String.str (Char.chr (ctxLen mod 256)) ^ certificateRequestContext
       fun oneEntry {certData, extensions} =
         len3 (String.size certData) ^ certData ^ encodeExtensions extensions
       val entries = String.concat (List.map oneEntry certificateList)
@@ -547,9 +566,13 @@ struct
     let
       val len = String.size s
     in
-      case readLen3 (s, 0) of
-          NONE => NONE
-        | SOME (ctxLen, i) =>
+      (* RFC 8446 sec 4.4.2: certificate_request_context has a 1-byte length. *)
+      if len < 1 then NONE
+      else
+        let
+          val ctxLen = Word8.toInt (Byte.charToByte (String.sub (s, 0)))
+          val i = 1
+        in
             if i + ctxLen > len then NONE
             else
               let
@@ -596,28 +619,31 @@ struct
                                       certificateList = entries}
                         end
               end
+        end
     end
 
   (* ---- CertificateVerify (§4.4.3) ---- *)
   type certificateVerify = {sigAlg : Word16.word, sigBytes : string}
 
+  (* RFC 8446 sec 4.4.3: signature is opaque<0..2^16-1>, i.e. a 2-byte
+     length prefix (not 3 bytes). *)
   fun encodeCertificateVerify {sigAlg, sigBytes} =
     word16ToBytes sigAlg
-    ^ len3 (String.size sigBytes) ^ sigBytes
+    ^ word16ToBytes (Word16.fromInt (String.size sigBytes)) ^ sigBytes
 
   fun decodeCertificateVerify s =
-    if String.size s < 5 then NONE
+    if String.size s < 4 then NONE
     else
       let
         val sigAlg = bytesToWord16 (Byte.charToByte (String.sub (s, 0)),
                                     Byte.charToByte (String.sub (s, 1)))
+        val n = Word16.toInt (bytesToWord16
+                  (Byte.charToByte (String.sub (s, 2)),
+                   Byte.charToByte (String.sub (s, 3))))
+        val i = 4
       in
-        case readLen3 (s, 2) of
-            NONE => NONE
-          | SOME (n, i) =>
-              if i + n > String.size s then NONE
-              else SOME {sigAlg = sigAlg,
-                         sigBytes = String.substring (s, i, n)}
+        if i + n > String.size s then NONE
+        else SOME {sigAlg = sigAlg, sigBytes = String.substring (s, i, n)}
       end
 
   (* ---- Finished (§4.4.4) ---- *)
@@ -724,6 +750,7 @@ struct
 
   (* ---- Named groups (§4.2.7) ---- *)
   val groupX25519 : Word16.word = 0wx001D
+  val groupSecp256r1 : Word16.word = 0wx0017
 end
 
 structure TlsKeySchedule :> TLS_KEY_SCHEDULE =
@@ -814,11 +841,65 @@ struct
   val clientCertVerifyContext = "TLS 1.3, client CertificateVerify"
   val serverCertVerifyContext = "TLS 1.3, server CertificateVerify"
 
+  (* RFC 8446 sec. 4.4.3: 64 octets of 0x20, the context string, a single
+     0x00 octet, then the content (transcript hash) to be signed. *)
   fun certificateVerifyInput {contextString, transcriptHash} =
-    certificateVerifyPrefix ^ contextString ^ " " ^ transcriptHash
+    certificateVerifyPrefix ^ contextString ^ String.str (Char.chr 0) ^ transcriptHash
+
+  (* rsa_pss_rsae_sha256 (RFC 8446 §4.2.3): SHA-256 + RSA-PSS, salt = 32. *)
+  val sigRsaPssRsaeSha256 = 0wx0804 : Word16.word
+  (* Fixed 32-byte (all-zero) PSS salt so signatures are reproducible across
+     MLton and Poly/ML. *)
+  val cvFixedSalt = String.implode (List.tabulate (32, fn _ => Char.chr 0))
+
+  fun signServerCertVerify {priv, sigAlg, transcript} =
+    if sigAlg = sigRsaPssRsaeSha256 then
+      let
+        val input = certificateVerifyInput
+          {contextString = serverCertVerifyContext,
+           transcriptHash = transcriptHash transcript}
+      in
+        Rsa.signPss {priv = priv, hash = Rsa.SHA256, salt = cvFixedSalt,
+                     msg = input}
+      end
+    else raise Fail "signServerCertVerify: unsupported signature scheme"
+
+  fun verifyServerCertVerify {pub, sigAlg, transcript, sgn} =
+    if sigAlg = sigRsaPssRsaeSha256 then
+      let
+        val input = certificateVerifyInput
+          {contextString = serverCertVerifyContext,
+           transcriptHash = transcriptHash transcript}
+      in
+        Rsa.verifyPss {pub = pub, hash = Rsa.SHA256, saltLen = 32,
+                       msg = input, sgn = sgn}
+      end
+    else false
 
   fun finishedVerifyData {finishedKey, transcript} =
     Hmac.hmacSha256 finishedKey (transcriptHash transcript)
+
+  (* ---- PSK resumption (RFC 8446 §4.6.1, §7.1, §4.2.11) ---- *)
+
+  fun resumptionMasterSecret {masterSecret, transcript} =
+    deriveSecret {secret = masterSecret, label = "res master",
+                  transcript = transcript}
+
+  fun resumptionPsk {resumptionMasterSecret, ticketNonce} =
+    hkdfExpandLabel {secret = resumptionMasterSecret, label = "resumption",
+                     context = ticketNonce, length = hashLen}
+
+  (* binder_key = Derive-Secret(Early-Secret(PSK), "res binder", "") *)
+  fun binderKey {psk} =
+    let val es = extract {salt = zeros, ikm = psk}
+    in deriveSecret {secret = es, label = "res binder", transcript = ""} end
+
+  fun binderFinishedKey {psk} =
+    hkdfExpandLabel {secret = binderKey {psk = psk}, label = "finished",
+                     context = "", length = hashLen}
+
+  fun pskBinder {psk, transcript} =
+    Hmac.hmacSha256 (binderFinishedKey {psk = psk}) (transcriptHash transcript)
 
   type keySchedule = {
     earlySecret       : string,
@@ -848,493 +929,4 @@ struct
        clientHandshakeSecret = cHs, serverHandshakeSecret = sHs,
        clientAppSecret = cAp, serverAppSecret = sAp}
     end
-end
-
-structure TlsClient :> TLS_CLIENT =
-struct
-  exception Tls of string
-
-  type extension = {extType : Word16.word, data : string}
-
-  type clientConfig = {
-    x25519PrivateKey  : string,
-    clientRandom      : string,
-    legacySessionId   : string,
-    cipherSuites      : Word16.word list,
-    extensions        : extension list
-  }
-
-  (* The opaque state carries everything the client learns during the
-     handshake: its private key, the transcript-so-far, the negotiated
-     cipher suite, and the derived secrets / traffic keys. *)
-  type clientState = {
-    x25519PrivateKey  : string,
-    clientHello       : TlsHandshake.clientHello,
-    transcript        : string,
-    cipherSuite       : Word16.word option,
-    serverHello       : TlsHandshake.serverHello option,
-    serverHandshakeKey : (string * string) option,
-    clientHandshakeKey : (string * string) option,
-    serverAppKey : (string * string) option,
-    clientAppKey : (string * string) option,
-    connected         : bool
-  }
-
-  (* Build the key_share extension for X25519: the client's public key. *)
-  fun keyShareExtension (privKey : string) : TlsHandshake.extension =
-    let
-      val pubKey = X25519.base privKey
-      (* key_share ClientHello entry: 2-byte named group, 2-byte key length,
-         key bytes. *)
-      val entry = TlsHandshake.word16ToBytes TlsHandshake.groupX25519
-        ^ TlsHandshake.word16ToBytes (Word16.fromInt (String.size pubKey))
-        ^ pubKey
-      (* The extension data is a 2-byte length-prefixed list of entries. *)
-      val data = TlsHandshake.word16ToBytes (Word16.fromInt (String.size entry)) ^ entry
-    in
-      {extType = TlsHandshake.extKeyShare, data = data}
-    end
-
-  (* Build the supported_versions extension for a ClientHello: a 1-byte
-     length prefix then a list of 2-byte versions, here just 0x0304 (TLS 1.3). *)
-  fun supportedVersionsExtension () : TlsHandshake.extension =
-    let
-      val tls13 = 0wx0304
-      val data = String.str (Char.chr 2) ^ TlsHandshake.word16ToBytes tls13
-    in
-      {extType = TlsHandshake.extSupportedVersions, data = data}
-    end
-
-  (* Build a supported_groups extension: 2-byte length, then list of 2-byte
-     named groups. *)
-  fun supportedGroupsExtension () : TlsHandshake.extension =
-    let
-      val groups = [TlsHandshake.groupX25519]
-      val body = String.concat (List.map TlsHandshake.word16ToBytes groups)
-      val data = TlsHandshake.word16ToBytes (Word16.fromInt (String.size body)) ^ body
-    in
-      {extType = TlsHandshake.extSupportedGroups, data = data}
-    end
-
-  (* Build a signature_algorithms extension: 2-byte length, then list of
-     2-byte scheme codes. *)
-  fun signatureAlgorithmsExtension () : TlsHandshake.extension =
-    let
-      val algs = [TlsHandshake.sigRsaPssRsaSha256,
-                  TlsHandshake.sigRsaPssRsaSha384,
-                  TlsHandshake.sigRsaPssRsaSha512]
-      val body = String.concat (List.map TlsHandshake.word16ToBytes algs)
-      val data = TlsHandshake.word16ToBytes (Word16.fromInt (String.size body)) ^ body
-    in
-      {extType = TlsHandshake.extSignatureAlgorithms, data = data}
-    end
-
-  fun startHandshake (cfg : clientConfig) : clientState * string =
-    let
-      val keyShare = keyShareExtension (#x25519PrivateKey cfg)
-      val supVer = supportedVersionsExtension ()
-      val supGrp = supportedGroupsExtension ()
-      val sigAlg = signatureAlgorithmsExtension ()
-      val exts = [#extensions cfg, [keyShare, supVer, supGrp, sigAlg]]
-      val allExts = List.concat exts
-      val ch = {
-        legacyVersion = 0wx0303,
-        random = #clientRandom cfg,
-        legacySessionId = #legacySessionId cfg,
-        cipherSuites = #cipherSuites cfg,
-        legacyCompression = [0w0],
-        extensions = allExts
-      } : TlsHandshake.clientHello
-      val body = TlsHandshake.encodeClientHello ch
-      val msg = TlsHandshake.encodeMessage
-        {msgType = TlsHandshake.ClientHello, body = body}
-      val record = TlsRecord.encodePlaintext
-        {contentType = TlsRecord.Handshake, fragment = msg}
-      val st = {
-        x25519PrivateKey = #x25519PrivateKey cfg,
-        clientHello = ch,
-        transcript = msg,
-        cipherSuite = NONE,
-        serverHello = NONE,
-        serverHandshakeKey = NONE,
-        clientHandshakeKey = NONE,
-        serverAppKey = NONE,
-        clientAppKey = NONE,
-        connected = false
-      } : clientState
-    in
-      (st, record)
-    end
-
-  (* Extract the server's X25519 public key from a ServerHello's key_share
-     extension. Returns NONE if absent. *)
-  fun serverKeyShare (sh : TlsHandshake.serverHello) : string option =
-    let
-      fun find [] = NONE
-        | find ({extType, data} :: rest) =
-            if extType = TlsHandshake.extKeyShare then
-              (* ServerHello key_share: 2-byte group, 2-byte key length, key. *)
-              if String.size data < 4 then NONE
-              else
-                let
-                  val grp = TlsHandshake.bytesToWord16
-                    (Byte.charToByte (String.sub (data, 0)),
-                     Byte.charToByte (String.sub (data, 1)))
-                  val klen = Word16.toInt (TlsHandshake.bytesToWord16
-                    (Byte.charToByte (String.sub (data, 2)),
-                     Byte.charToByte (String.sub (data, 3))))
-                in
-                  if grp <> TlsHandshake.groupX25519 then NONE
-                  else if 4 + klen > String.size data then NONE
-                  else SOME (String.substring (data, 4, klen))
-                end
-            else find rest
-    in
-      find (#extensions sh)
-    end
-
-  (* After receiving ServerHello: compute the shared X25519 secret and derive
-     the handshake-traffic keys. *)
-  fun processServerHello (st : clientState, shBody : string) : clientState =
-    case TlsHandshake.decodeServerHello shBody of
-        NONE => raise Tls "malformed ServerHello"
-      | SOME sh =>
-          let
-            val cs = #cipherSuite sh
-            (* Compute shared secret. *)
-            val dhe = case serverKeyShare sh of
-                          NONE => raise Tls "server sent no usable key_share"
-                        | SOME serverPub => X25519.dh (#x25519PrivateKey st) serverPub
-            (* The transcript so far is ClientHello || ServerHello (wire form). *)
-            val shMsg = TlsHandshake.encodeMessage
-              {msgType = TlsHandshake.ServerHello, body = shBody}
-            val transcript = #transcript st ^ shMsg
-            (* Derive the handshake-traffic secrets and keys. *)
-            val sched = TlsKeySchedule.schedule {
-              dhe = dhe,
-              handshakeTranscript = transcript,
-              applicationTranscript = ""   (* not yet available *)
-            }
-            (* Key/IV lengths depend on the cipher suite. We assume the
-               AES-128-GCM-SHA256 or ChaCha20-Poly1305-SHA256 suites here. *)
-            val (keyLen, ivLen) =
-              if cs = TlsHandshake.suiteTlsAes128GcmSha256 orelse
-                 cs = TlsHandshake.suiteTlsChaCha20Poly1305 then (16, 12)
-              else if cs = TlsHandshake.suiteTlsAes256GcmSha384 then (32, 12)
-              else (16, 12)  (* default *)
-            val sHsKey = TlsKeySchedule.trafficKey
-              {secret = #serverHandshakeSecret sched, keyLength = keyLen}
-            val sHsIv = TlsKeySchedule.trafficIv
-              {secret = #serverHandshakeSecret sched, ivLength = ivLen}
-            val cHsKey = TlsKeySchedule.trafficKey
-              {secret = #clientHandshakeSecret sched, keyLength = keyLen}
-            val cHsIv = TlsKeySchedule.trafficIv
-              {secret = #clientHandshakeSecret sched, ivLength = ivLen}
-          in
-            { x25519PrivateKey = #x25519PrivateKey st,
-              clientHello = #clientHello st,
-              transcript = transcript,
-              cipherSuite = SOME cs,
-              serverHello = SOME sh,
-              serverHandshakeKey = SOME (sHsKey, sHsIv),
-              clientHandshakeKey = SOME (cHsKey, cHsIv),
-              serverAppKey = NONE,
-              clientAppKey = NONE,
-              connected = false }
-          end
-
-  (* Feed received bytes (a sequence of handshake messages, already extracted
-     from their record headers and decrypted) to the client. *)
-  fun step (st : clientState, input : string) : clientState * string list =
-    (* If we have not yet seen a ServerHello, the input is expected to be
-       a ServerHello handshake message. *)
-    case #serverHello st of
-        NONE =>
-          (case TlsHandshake.decodeMessage input of
-               SOME ({msgType = TlsHandshake.ServerHello, body}, "") =>
-                 let val st' = processServerHello (st, body)
-                 in (st', []) end
-             | _ => raise Tls "expected ServerHello")
-        | SOME _ =>
-            (* After ServerHello we expect EncryptedExtensions, Certificate,
-               CertificateVerify, Finished (all under the server handshake
-               traffic key, which the caller has already used to decrypt).
-               For this pure state machine we simply append each message to
-               the transcript and, on Finished, derive the application-traffic
-               keys and mark the connection connected. *)
-            let
-              fun loop (remaining, st0) =
-                if remaining = "" then (st0, [])
-                else
-                  case TlsHandshake.decodeMessage remaining of
-                      NONE => raise Tls "malformed handshake message"
-                    | SOME ({msgType, body}, rest) =>
-                        let
-                          val msg = TlsHandshake.encodeMessage
-                            {msgType = msgType, body = body}
-                          val transcript = #transcript st0 ^ msg
-                        in
-                          case msgType of
-                              TlsHandshake.Finished =>
-                                let
-                                  (* Derive application-traffic keys using the
-                                     transcript up to and including the server
-                                     Finished. *)
-                                  val cs = Option.valOf (#cipherSuite st0)
-                                  val (keyLen, ivLen) =
-                                    if cs = TlsHandshake.suiteTlsAes128GcmSha256 orelse
-                                       cs = TlsHandshake.suiteTlsChaCha20Poly1305
-                                    then (16, 12)
-                                    else if cs = TlsHandshake.suiteTlsAes256GcmSha384
-                                    then (32, 12)
-                                    else (16, 12)
-                                  val sched = TlsKeySchedule.schedule {
-                                    dhe = "",
-                                    handshakeTranscript = transcript,
-                                    applicationTranscript = transcript
-                                  }
-                                  val sApKey = TlsKeySchedule.trafficKey
-                                    {secret = #serverAppSecret sched, keyLength = keyLen}
-                                  val sApIv = TlsKeySchedule.trafficIv
-                                    {secret = #serverAppSecret sched, ivLength = ivLen}
-                                  val cApKey = TlsKeySchedule.trafficKey
-                                    {secret = #clientAppSecret sched, keyLength = keyLen}
-                                  val cApIv = TlsKeySchedule.trafficIv
-                                    {secret = #clientAppSecret sched, ivLength = ivLen}
-                                  val st1 = {
-                                    x25519PrivateKey = #x25519PrivateKey st0,
-                                    clientHello = #clientHello st0,
-                                    transcript = transcript,
-                                    cipherSuite = #cipherSuite st0,
-                                    serverHello = #serverHello st0,
-                                    serverHandshakeKey = #serverHandshakeKey st0,
-                                    clientHandshakeKey = #clientHandshakeKey st0,
-                                    serverAppKey = SOME (sApKey, sApIv),
-                                    clientAppKey = SOME (cApKey, cApIv),
-                                    connected = true
-                                  } : clientState
-                                  (* The client should now send its own Finished
-                                     under the client handshake key; the caller
-                                     will AEAD-protect it. We return the
-                                     Finished body for the caller to encrypt. *)
-                                  val fKey = TlsKeySchedule.finishedKey
-                                    {secret = #clientHandshakeSecret sched}
-                                  val verifyData = TlsKeySchedule.finishedVerifyData
-                                    {finishedKey = fKey, transcript = transcript}
-                                  val finishedBody =
-                                    TlsHandshake.encodeFinished {verifyData = verifyData}
-                                in
-                                  (st1, [finishedBody])
-                                end
-                            | _ => loop (rest, { x25519PrivateKey = #x25519PrivateKey st0,
-                                                  clientHello = #clientHello st0,
-                                                  transcript = transcript,
-                                                  cipherSuite = #cipherSuite st0,
-                                                  serverHello = #serverHello st0,
-                                                  serverHandshakeKey = #serverHandshakeKey st0,
-                                                  clientHandshakeKey = #clientHandshakeKey st0,
-                                                  serverAppKey = #serverAppKey st0,
-                                                  clientAppKey = #clientAppKey st0,
-                                                  connected = #connected st0 })
-                        end
-              val (st', outs) = loop (input, st)
-            in
-              (st', outs)
-            end
-
-  fun negotiatedCipherSuite (st : clientState) = #cipherSuite st
-  fun serverHandshakeKey (st : clientState) = #serverHandshakeKey st
-  fun clientHandshakeKey (st : clientState) = #clientHandshakeKey st
-  fun serverAppKey (st : clientState) = #serverAppKey st
-  fun clientAppKey (st : clientState) = #clientAppKey st
-  fun transcript (st : clientState) = #transcript st
-  fun isConnected (st : clientState) = #connected st
-end
-
-structure TlsServer :> TLS_SERVER =
-struct
-  exception Tls of string
-
-  type extension = {extType : Word16.word, data : string}
-
-  type serverConfig = {
-    x25519PrivateKey  : string,
-    serverRandom      : string,
-    cipherSuite       : Word16.word,
-    legacySessionId   : string,
-    extensions        : extension list
-  }
-
-  type serverState = {
-    x25519PrivateKey  : string,
-    serverRandom      : string,
-    cipherSuite       : Word16.word option,
-    legacySessionId   : string,
-    extensions        : TlsHandshake.extension list,
-    transcript        : string,
-    clientHello       : TlsHandshake.clientHello option,
-    serverHello       : TlsHandshake.serverHello option,
-    serverHandshakeKey : (string * string) option,
-    clientHandshakeKey : (string * string) option,
-    serverAppKey : (string * string) option,
-    clientAppKey : (string * string) option,
-    connected         : bool
-  }
-
-  fun receiveClientHello (chBody : string) : serverState =
-    case TlsHandshake.decodeClientHello chBody of
-        NONE => raise Tls "malformed ClientHello"
-      | SOME ch =>
-          let
-            val chMsg = TlsHandshake.encodeMessage
-              {msgType = TlsHandshake.ClientHello, body = chBody}
-          in
-            { x25519PrivateKey = "",
-              serverRandom = "",
-              cipherSuite = NONE,
-              legacySessionId = "",
-              extensions = [],
-              transcript = chMsg,
-              clientHello = SOME ch,
-              serverHello = NONE,
-              serverHandshakeKey = NONE,
-              clientHandshakeKey = NONE,
-              serverAppKey = NONE,
-              clientAppKey = NONE,
-              connected = false }
-          end
-
-  (* Build the server's key_share extension from its private key. *)
-  fun serverKeyShareExtension (privKey : string) : TlsHandshake.extension =
-    let
-      val pubKey = X25519.base privKey
-      (* ServerHello key_share: 2-byte group, 2-byte key length, key. *)
-      val data = TlsHandshake.word16ToBytes TlsHandshake.groupX25519
-        ^ TlsHandshake.word16ToBytes (Word16.fromInt (String.size pubKey))
-        ^ pubKey
-    in
-      {extType = TlsHandshake.extKeyShare, data = data}
-    end
-
-  fun supportedVersionsServerExt () : TlsHandshake.extension =
-    let
-      val data = TlsHandshake.word16ToBytes 0wx0304
-    in
-      {extType = TlsHandshake.extSupportedVersions, data = data}
-    end
-
-  fun produceServerHello (st : serverState, cfg : serverConfig) : serverState * string =
-    let
-      val keyShare = serverKeyShareExtension (#x25519PrivateKey cfg)
-      val supVer = supportedVersionsServerExt ()
-      val exts = List.concat [#extensions cfg, [keyShare, supVer]]
-      val sh = {
-        legacyVersion = 0wx0303,
-        random = #serverRandom cfg,
-        legacySessionId = #legacySessionId cfg,
-        cipherSuite = #cipherSuite cfg,
-        legacyCompression = 0w0,
-        extensions = exts
-      } : TlsHandshake.serverHello
-      val shBody = TlsHandshake.encodeServerHello sh
-      val shMsg = TlsHandshake.encodeMessage
-        {msgType = TlsHandshake.ServerHello, body = shBody}
-      val transcript = #transcript st ^ shMsg
-      (* Compute shared secret from the client's key_share. *)
-      fun findClientKeyShare [] = NONE
-        | findClientKeyShare ({extType, data} :: rest) =
-            if extType = TlsHandshake.extKeyShare then
-              (* ClientHello key_share: 2-byte total length, then entries. *)
-              if String.size data < 2 then NONE
-              else
-                let
-                  val total = Word16.toInt (TlsHandshake.bytesToWord16
-                    (Byte.charToByte (String.sub (data, 0)),
-                     Byte.charToByte (String.sub (data, 1))))
-                  fun scan (i, limit) =
-                    if i + 4 > limit then NONE
-                    else
-                      let
-                        val grp = TlsHandshake.bytesToWord16
-                          (Byte.charToByte (String.sub (data, i)),
-                           Byte.charToByte (String.sub (data, i + 1)))
-                        val klen = Word16.toInt (TlsHandshake.bytesToWord16
-                          (Byte.charToByte (String.sub (data, i + 2)),
-                           Byte.charToByte (String.sub (data, i + 3))))
-                      in
-                        if grp = TlsHandshake.groupX25519 andalso i + 4 + klen <= limit then
-                          SOME (String.substring (data, i + 4, klen))
-                        else scan (i + 4 + klen, limit)
-                      end
-                in
-                  scan (2, 2 + total)
-                end
-            else findClientKeyShare rest
-      val clientPub = case #clientHello st of
-                          NONE => raise Tls "no ClientHello"
-                        | SOME ch =>
-                            case findClientKeyShare (#extensions ch) of
-                                NONE => raise Tls "client sent no X25519 key_share"
-                              | SOME k => k
-      val dhe = X25519.dh (#x25519PrivateKey cfg) clientPub
-      val sched = TlsKeySchedule.schedule {
-        dhe = dhe,
-        handshakeTranscript = transcript,
-        applicationTranscript = ""
-      }
-      val cs = #cipherSuite cfg
-      val (keyLen, ivLen) =
-        if cs = TlsHandshake.suiteTlsAes128GcmSha256 orelse
-           cs = TlsHandshake.suiteTlsChaCha20Poly1305 then (16, 12)
-        else if cs = TlsHandshake.suiteTlsAes256GcmSha384 then (32, 12)
-        else (16, 12)
-      val sHsKey = TlsKeySchedule.trafficKey
-        {secret = #serverHandshakeSecret sched, keyLength = keyLen}
-      val sHsIv = TlsKeySchedule.trafficIv
-        {secret = #serverHandshakeSecret sched, ivLength = ivLen}
-      val cHsKey = TlsKeySchedule.trafficKey
-        {secret = #clientHandshakeSecret sched, keyLength = keyLen}
-      val cHsIv = TlsKeySchedule.trafficIv
-        {secret = #clientHandshakeSecret sched, ivLength = ivLen}
-      val record = TlsRecord.encodePlaintext
-        {contentType = TlsRecord.Handshake, fragment = shMsg}
-      val st' = {
-        x25519PrivateKey = #x25519PrivateKey cfg,
-        serverRandom = #serverRandom cfg,
-        cipherSuite = SOME cs,
-        legacySessionId = #legacySessionId cfg,
-        extensions = #extensions cfg,
-        transcript = transcript,
-        clientHello = #clientHello st,
-        serverHello = SOME sh,
-        serverHandshakeKey = SOME (sHsKey, sHsIv),
-        clientHandshakeKey = SOME (cHsKey, cHsIv),
-        serverAppKey = NONE,
-        clientAppKey = NONE,
-        connected = false
-      } : serverState
-    in
-      (st', record)
-    end
-
-  fun step (st : serverState, input : string) : serverState * string list =
-    (st, [])  (* server-side handshake message production is caller-driven *)
-
-  fun negotiatedCipherSuite (st : serverState) = #cipherSuite st
-  fun serverHandshakeKey (st : serverState) = #serverHandshakeKey st
-  fun clientHandshakeKey (st : serverState) = #clientHandshakeKey st
-  fun serverAppKey (st : serverState) = #serverAppKey st
-  fun clientAppKey (st : serverState) = #clientAppKey st
-  fun transcript (st : serverState) = #transcript st
-  fun isConnected (st : serverState) = #connected st
-end
-
-structure Tls :> TLS =
-struct
-  structure TlsRecord      = TlsRecord
-  structure TlsAlert       = TlsAlert
-  structure TlsHandshake   = TlsHandshake
-  structure TlsKeySchedule = TlsKeySchedule
-  structure TlsClient      = TlsClient
-  structure TlsServer      = TlsServer
 end

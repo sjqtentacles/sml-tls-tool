@@ -1,0 +1,6 @@
+(* sml-p256: public library basis.  Re-exports the P256 structure so a
+   consumer gets everything needed by opening one .mlb. *)
+
+$(SML_LIB)/basis/basis.mlb
+
+sources.mlb

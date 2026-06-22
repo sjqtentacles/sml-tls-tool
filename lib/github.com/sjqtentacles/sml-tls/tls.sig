@@ -165,6 +165,15 @@ sig
   val extSignatureAlgorithms : Word16.word  (* 13 *)
   val extSupportedVersions   : Word16.word  (* 43 *)
   val extKeyShare            : Word16.word  (* 51 *)
+  val extPreSharedKey        : Word16.word  (* 41 *)
+  val extEarlyData           : Word16.word  (* 42 *)
+  val extCookie              : Word16.word  (* 44 *)
+  val extPskKeyExchangeModes : Word16.word  (* 45 *)
+
+  (* RFC 8446 §4.1.3: the special ServerHello.random value that marks a
+     message as a HelloRetryRequest -- SHA-256 of the ASCII string
+     "HelloRetryRequest". *)
+  val helloRetryRequestRandom : string
 
   (* ---- ClientHello (§4.1.2) ----
      The fields kept are the subset needed for a deterministic 1-RTT
@@ -257,6 +266,7 @@ sig
 
   (* ---- Named groups (§4.2.7) ---- *)
   val groupX25519 : Word16.word  (* 0x001d *)
+  val groupSecp256r1 : Word16.word  (* 0x0017 -- wired at J1 alongside A4 *)
 
   (* ---- Shared wire helpers ----
      Exposed so the client/server state machines can build and parse the
@@ -363,7 +373,7 @@ sig
   val certificateVerifyPrefix : string
 
   (* Build the message that CertificateVerify signs / verifies:
-       64 spaces ^ contextString ^ single space ^ transcriptHash
+       64 spaces ^ contextString ^ single 0x00 octet ^ transcriptHash
      `contextString` is "TLS 1.3, client CertificateVerify" or
      "TLS 1.3, server CertificateVerify". *)
   val certificateVerifyInput : {contextString : string, transcriptHash : string} -> string
@@ -372,11 +382,47 @@ sig
   val clientCertVerifyContext : string  (* "TLS 1.3, client CertificateVerify" *)
   val serverCertVerifyContext : string  (* "TLS 1.3, server CertificateVerify" *)
 
+  (* Sign / verify a server CertificateVerify (RFC 8446 §4.4.3).
+     `transcript` is the raw concatenated handshake-message bytes through the
+     server Certificate message; it is hashed (SHA-256) internally and the
+     resulting digest is wrapped by `certificateVerifyInput`.
+
+     Only the rsa_pss_rsae_sha256 scheme (0x0804) is supported: SHA-256,
+     RSA-PSS with a 32-byte salt. `signServerCertVerify` uses a fixed
+     all-zero 32-byte salt for determinism, and raises `Fail` for any other
+     `sigAlg`. `verifyServerCertVerify` returns `false` for an unsupported
+     `sigAlg` or a bad signature. *)
+  val signServerCertVerify :
+    {priv : Rsa.privkey, sigAlg : Word16.word, transcript : string} -> string
+  val verifyServerCertVerify :
+    {pub : Rsa.pubkey, sigAlg : Word16.word, transcript : string,
+     sgn : string} -> bool
+
   (* Compute the Finished verify_data:
        HMAC(finishedKey, Hash(transcript))
      using HMAC-SHA-256. `transcript` is the concatenated wire-form handshake
      messages up to and including the message just before this Finished. *)
   val finishedVerifyData : {finishedKey : string, transcript : string} -> string
+
+  (* ---- PSK resumption (RFC 8446 §4.6.1, §7.1, §4.2.11) ----
+
+     resumption_master_secret = Derive-Secret(master_secret, "res master",
+                                  ClientHello...client Finished)
+     The per-ticket PSK is then
+       PSK = HKDF-Expand-Label(resumption_master_secret, "resumption",
+                               ticket_nonce, Hash.length). *)
+  val resumptionMasterSecret : {masterSecret : string, transcript : string} -> string
+  val resumptionPsk : {resumptionMasterSecret : string, ticketNonce : string} -> string
+
+  (* The PskBinderEntry finished key (§4.2.11 / §7.1):
+       binder_key = Derive-Secret(Early-Secret(PSK), "res binder", "")
+       binderFinishedKey = HKDF-Expand-Label(binder_key, "finished", "", Hash.length)
+     and the binder MAC itself
+       pskBinder = HMAC(binderFinishedKey, Transcript-Hash(Truncate(ClientHello)))
+     where `transcript` is the partial ClientHello bytes up to (excluding)
+     the binders list. *)
+  val binderFinishedKey : {psk : string} -> string
+  val pskBinder : {psk : string, transcript : string} -> string
 end
 
 signature TLS_CLIENT =
@@ -393,7 +439,9 @@ sig
 
      See RFC 8446 §7.1 for the full 1-RTT client state machine. The state
      also carries the negotiated key schedule, traffic keys, and transcript
-     once they are available. *)
+     once they are available. Post-J1 the state machine owns record-layer
+     AEAD protection internally: `step` accepts raw wire bytes (ciphertext
+     records after the ServerHello) and returns encrypted records to send. *)
 
   (* The extension type, shared with TLS_HANDSHAKE. The implementing
      structure must unify this with TlsHandshake.extension. *)
@@ -401,15 +449,23 @@ sig
 
   type clientState
 
-  (* The inputs the caller provides to drive the handshake: the client's
-     X25519 private key, the chosen cipher suite, the client random, the
-     legacy session id, and any extra ClientHello extensions. *)
+  (* The inputs the caller provides to drive the handshake. Post-J1 the
+     config also carries the trust store, hostname, injected clock, and
+     acceptable signature algorithms needed for certificate validation at
+     the Certificate step, plus an optional P-256 private key so the
+     client can offer a P-256 key_share (A4). `serverName` is the SNI
+     host_name sent in the ClientHello and used for RFC 6125 matching. *)
   type clientConfig = {
     x25519PrivateKey  : string,        (* 32 bytes                     *)
+    p256PrivateKey    : string option, (* 32-byte scalar, or NONE       *)
     clientRandom      : string,        (* 32 bytes                     *)
     legacySessionId   : string,
     cipherSuites      : Word16.word list,
-    extensions        : extension list
+    extensions        : extension list,
+    serverName        : string,        (* SNI host_name + cert match    *)
+    trustStore        : string list,   (* DER trust anchors             *)
+    now               : int,           (* injected unix time            *)
+    sigAlgs           : Word16.word list
   }
 
   exception Tls of string
@@ -419,19 +475,30 @@ sig
      TLSPlaintext record containing the ClientHello handshake message). *)
   val startHandshake : clientConfig -> clientState * string
 
-  (* Feed received bytes to the client. The bytes are a sequence of
-     TLSPlaintext records (already decrypted by the caller's transport if
-     they came after the ServerHello; this library does not itself perform
-     record-layer decryption -- the caller does that using traffic keys
-     extracted from the state via `trafficKeys`). Returns the updated state
-     and the bytes to send (possibly empty). Raises `Tls` on a protocol
-     violation. *)
+  (* Feed received wire bytes to the client. The bytes are a sequence of
+     TLS records: the ServerHello arrives as a plaintext Handshake record,
+     and everything after it arrives as encrypted ApplicationData records
+     which the state machine decrypts internally using the traffic keys
+     derived from the ServerHello. Returns the updated state and the wire
+     bytes to send (encrypted records: the client Finished, application
+     data, KeyUpdate responses, etc.). On a protocol violation the state
+     transitions to a terminal Error state carrying the fatal alert, and
+     the returned bytes are a single encrypted Alert record (or plaintext
+     alert if no traffic key is established yet). *)
   val step : clientState * string -> clientState * string list
 
+  (* Send application data under the current client application-traffic
+     key. Returns the encrypted record bytes and the advanced state.
+     Raises `Tls` if the connection is not yet established. *)
+  val sendApplicationData : clientState * string -> clientState * string
+
+  (* Request a key update (send a KeyUpdate message). Returns the new
+     state (with the client write key updated) and the encrypted record. *)
+  val requestKeyUpdate : clientState -> clientState * string
+
   (* Inspect the state: the negotiated cipher suite, the current handshake
-     traffic keys (for the caller to AEAD-protect/decrypt records), and the
-     transcript-so-far. These are `option`s because they are only available
-     after the ServerHello is processed. *)
+     traffic keys (kept for inspection/testing; `step` no longer requires
+     the caller to AEAD), and the transcript-so-far. *)
   val negotiatedCipherSuite : clientState -> Word16.word option
   val serverHandshakeKey : clientState -> (string * string) option  (* (key, iv) *)
   val clientHandshakeKey : clientState -> (string * string) option
@@ -439,6 +506,12 @@ sig
   val clientAppKey : clientState -> (string * string) option
   val transcript : clientState -> string
   val isConnected : clientState -> bool
+  (* True once the server's CertificateVerify signature has been verified
+     against the leaf certificate's public key. Remains false for legacy
+     empty-signature handshakes where CV verification is skipped. *)
+  val certVerified : clientState -> bool
+  (* The fatal alert description byte that terminated the connection, if any. *)
+  val error : clientState -> Word8.word option
 end
 
 signature TLS_SERVER =
@@ -447,27 +520,63 @@ sig
 
   type serverState
 
+  (* Post-J1 the server config carries the server's certificate chain
+     (leaf-first DER) and RSA private key (for CertificateVerify signing,
+     passed as DER PKCS#8 bytes decoded internally), plus the clock and
+     sigAlgs. `p256PrivateKey` lets the server offer a P-256 key_share. *)
   type serverConfig = {
-    x25519PrivateKey  : string,        (* 32 bytes                     *)
-    serverRandom      : string,        (* 32 bytes                     *)
+    x25519PrivateKey  : string,
+    p256PrivateKey    : string option,
+    serverRandom      : string,
     cipherSuite       : Word16.word,
     legacySessionId   : string,        (* echoed from ClientHello      *)
-    extensions        : extension list
+    extensions        : extension list,
+    certChain         : string list,   (* leaf-first DER               *)
+    rsaPrivateKeyDer  : string,        (* PKCS#8 DER, for CertVerify   *)
+    sigAlg            : Word16.word,   (* CertificateVerify scheme     *)
+    now               : int,
+    sigAlgs           : Word16.word list
   }
 
   exception Tls of string
 
-  (* Begin processing an incoming ClientHello. Returns the new state
-     (ClientHelloReceived) and nothing to send yet; the caller then invokes
-     `produceServerHello` to emit the ServerHello. *)
+  (* Begin processing an incoming ClientHello. `string` is the ClientHello
+     *body* (already extracted from its handshake header by the caller).
+     Returns the new state (ClientHelloReceived) with nothing to send yet. *)
   val receiveClientHello : string -> serverState
-      (* `string` is the ClientHello *body* (already extracted from its
-         handshake header by the caller). *)
 
+  (* Emit a HelloRetryRequest (RFC 8446 §4.1.4) that forces the client to
+     retry with a key_share for `group`, optionally carrying a `cookie`.
+     Applies the §4.4.1 synthetic-message transcript substitution
+     (ClientHello1 -> message_hash || 00 00 Hash.length || Hash(CH1)).
+     Returns the new state (transcript reset) and the HRR plaintext record. *)
+  val produceHelloRetryRequest :
+    serverState * serverConfig * {group : Word16.word, cookie : string}
+    -> serverState * string
+
+  (* Process ClientHello2 (its body, no handshake header) received after a
+     HelloRetryRequest: append it to the synthetic-substituted transcript
+     and adopt it as the active ClientHello. *)
+  val receiveSecondClientHello : serverState * string -> serverState
+
+  (* Emit the ServerHello (a single plaintext Handshake record) and derive
+     the handshake-traffic keys. *)
   val produceServerHello : serverState * serverConfig -> serverState * string
 
-  (* Feed received bytes (already decrypted records) to the server. Returns
-     the updated state and bytes to send. *)
+  (* Emit the encrypted server handshake flight: EncryptedExtensions,
+     Certificate, CertificateVerify, Finished -- all under the server
+     handshake-traffic key. Returns the concatenated encrypted records and
+     the state with application-traffic keys derived. *)
+  val produceServerFlight : serverState * serverConfig -> serverState * string
+
+  (* Emit a NewSessionTicket (under the server application-traffic key).
+     `nstBody` is the wire-form NewSessionTicket message body. *)
+  val produceNewSessionTicket : serverState * serverConfig * string
+                                -> serverState * string
+
+  (* Feed received wire bytes (encrypted records) to the server. Returns
+     the updated state and bytes to send. Handles the client Finished,
+     application data, and KeyUpdate. *)
   val step : serverState * string -> serverState * string list
 
   val negotiatedCipherSuite : serverState -> Word16.word option
@@ -477,6 +586,7 @@ sig
   val clientAppKey : serverState -> (string * string) option
   val transcript : serverState -> string
   val isConnected : serverState -> bool
+  val error : serverState -> Word8.word option
 end
 
 signature TLS =

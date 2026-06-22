@@ -32,6 +32,25 @@ struct
         SOME e => NetHostDB.addr e
       | NONE => raise Shim ("cannot resolve host: " ^ host)
 
+  (* Read a whole file as a 1-char-per-byte string (for DER trust anchors). *)
+  fun readFileBytes path =
+    let
+      val ins = BinIO.openIn path
+      val v = BinIO.inputAll ins
+      val () = BinIO.closeIn ins
+    in
+      CharVector.tabulate (Word8Vector.length v, fn i =>
+        Char.chr (Word8.toInt (Word8Vector.sub (v, i))))
+    end
+
+  (* Optional differential config from the environment:
+       TLS_TRUST_DER  path to a DER-encoded trust anchor (added to trustStore)
+       TLS_SNI        SNI host_name / RFC 6125 match name override *)
+  fun envTrustStore () =
+    case OS.Process.getEnv "TLS_TRUST_DER" of
+        NONE => []
+      | SOME p => [readFileBytes p handle _ => raise Shim ("cannot read " ^ p)]
+
   (* Drain `toSend` to the socket, then loop receiving chunks and feeding
      them to `step`. `step` returns the new state and a list of byte
      strings to send back to the peer. We pump until either the state
@@ -71,18 +90,60 @@ struct
         handle e => (Socket.close sock; raise Shim ("connect failed: " ^ exnMessage e))
       val cfg : TlsClient.clientConfig = {
         x25519PrivateKey = x25519PrivateKey,
+        p256PrivateKey   = NONE,
         clientRandom     = clientRandom,
         legacySessionId  = legacySessionId,
         cipherSuites     = cipherSuites,
-        extensions       = []
+        extensions       = [],
+        serverName       = (case OS.Process.getEnv "TLS_SNI" of
+                                SOME s => s | NONE => host),
+        trustStore       = envTrustStore (),
+        now              = (case Option.mapPartial Int.fromString
+                                   (OS.Process.getEnv "TLS_NOW") of
+                                SOME n => n | NONE => 0),
+        sigAlgs          = [TlsHandshake.sigRsaPssRsaSha256]
       }
       val (st0, chBytes) = TlsClient.startHandshake cfg
         handle e => (Socket.close sock; raise Shim ("startHandshake: " ^ exnMessage e))
+      val debug = OS.Process.getEnv "TLS_DEBUG" <> NONE
+      fun dbg s = if debug then TextIO.output (TextIO.stdErr, s ^ "\n") else ()
+      fun errStr st =
+        case TlsClient.error st of
+            NONE => "none" | SOME w => Word8.toString w
+      fun sendAll [] = ()
+        | sendAll (b :: bs) =
+            (ignore (Socket.sendVec (sock, Word8VectorSlice.full (toVec b)));
+             sendAll bs)
+      (* Diagnostic, bounded pump: feed received chunks to TlsClient.step,
+         reporting connect/error progress. Bounded so it always terminates. *)
+      fun pump (state, toSend, iters) =
+        if iters <= 0 then raise Shim "handshake did not converge (iteration cap)"
+        else
+          (sendAll toSend;
+           if TlsClient.isConnected state then
+             dbg "CONNECTED"
+           else
+             let val chunk = Socket.recvVec (sock, 65536)
+             in
+               if Word8Vector.length chunk = 0 then
+                 (if TlsClient.isConnected state then dbg "CONNECTED"
+                  else raise Shim ("peer closed; connected=false error="
+                                   ^ errStr state))
+               else
+                 let val (state', toSend') = TlsClient.step (state, fromVec chunk)
+                 in
+                   dbg ("step: recv=" ^ Int.toString (Word8Vector.length chunk)
+                        ^ " connected=" ^ Bool.toString (TlsClient.isConnected state')
+                        ^ " error=" ^ errStr state'
+                        ^ " toSend=" ^ Int.toString (List.length toSend'));
+                   (case TlsClient.error state' of
+                        SOME w => (sendAll toSend';
+                                   raise Shim ("client error alert=" ^ Word8.toString w))
+                      | NONE => pump (state', toSend', iters - 1))
+                 end
+             end)
     in
-      (pumpStep {sock = sock, step = TlsClient.step,
-                 isConnected = TlsClient.isConnected,
-                 toSend = [chBytes], state = st0}
-       handle e => (Socket.close sock; raise e))
+      (pump (st0, [chBytes], 16) handle e => (Socket.close sock; raise e))
       ; Socket.close sock
     end
 
@@ -123,10 +184,16 @@ struct
               val st0 = TlsServer.receiveClientHello chBody
               val cfg : TlsServer.serverConfig = {
                 x25519PrivateKey = x25519PrivateKey,
+                p256PrivateKey   = NONE,
                 serverRandom     = serverRandom,
                 cipherSuite      = cipherSuite,
                 legacySessionId  = "",
-                extensions       = []
+                extensions       = [],
+                certChain        = [],
+                rsaPrivateKeyDer = "",
+                sigAlg           = TlsHandshake.sigRsaPssRsaSha256,
+                now              = 0,
+                sigAlgs          = []
               }
               val (st1, shBytes) = TlsServer.produceServerHello (st0, cfg)
               val () = ignore (Socket.sendVec (sock, Word8VectorSlice.full (toVec shBytes)))
