@@ -1,0 +1,7 @@
+(* sml-tls: public library basis. Re-exports the vendored crypto family
+   plus the TLS sources, so a consumer gets the Tls structure (and the
+   underlying Sha256 / Hmac / Aead / X25519 / Kdf / Rsa / X509 structures). *)
+
+$(SML_LIB)/basis/basis.mlb
+
+sources.mlb

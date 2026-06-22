@@ -1,0 +1,6 @@
+(* Source files for the sml-chacha20 library, in dependency order. *)
+
+$(SML_LIB)/basis/basis.mlb
+
+chacha20.sig
+chacha20.sml

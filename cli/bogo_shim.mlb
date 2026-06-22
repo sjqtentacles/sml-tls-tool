@@ -1,0 +1,10 @@
+(* bogo_shim.mlb -- BoGo shim: pure sml-tls + socket driver + BoGo main.
+   Paths relative to this MLB file (in cli/). *)
+$(SML_LIB)/basis/basis.mlb
+$(SML_LIB)/basis/unsafe.mlb
+../lib/github.com/sjqtentacles/sml-tls/sources.mlb
+../src/socket_shim.sig
+../src/socket_shim.sml
+../src/bogo_shim.sig
+../src/bogo_shim.sml
+bogo_main.sml

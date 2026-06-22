@@ -1,0 +1,7 @@
+(* socket_shim.mlb -- loads the vendored pure sml-tls library, then the
+   impure socket driver. Paths relative to this MLB (in src/). *)
+$(SML_LIB)/basis/basis.mlb
+$(SML_LIB)/basis/unsafe.mlb
+../lib/github.com/sjqtentacles/sml-tls/sources.mlb
+socket_shim.sig
+socket_shim.sml

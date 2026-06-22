@@ -1,0 +1,5 @@
+(* afl_extensions.mlb *)
+$(SML_LIB)/basis/basis.mlb
+../lib/github.com/sjqtentacles/sml-tls/sources.mlb
+afl_harness.sml
+afl_extensions.sml

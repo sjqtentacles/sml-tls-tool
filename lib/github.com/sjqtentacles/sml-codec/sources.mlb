@@ -1,0 +1,16 @@
+(* Source files for the sml-codec library, in dependency order. *)
+
+$(SML_LIB)/basis/basis.mlb
+
+base16.sig
+base16.sml
+base64.sig
+base64.sml
+crc32.sig
+crc32.sml
+sha1.sig
+sha1.sml
+sha256.sig
+sha256.sml
+sha512.sig
+sha512.sml

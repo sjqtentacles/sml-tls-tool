@@ -1,0 +1,6 @@
+(* sml-crypto: public library basis. Re-exports the vendored sml-codec
+   plus the crypto sources, so a consumer gets Hmac/Token (and Sha256 etc.). *)
+
+$(SML_LIB)/basis/basis.mlb
+
+sources.mlb

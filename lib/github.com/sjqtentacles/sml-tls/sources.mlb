@@ -1,0 +1,85 @@
+(* Source files for sml-tls, in dependency order. Pulls in the vendored
+   crypto family (sml-codec, sml-bigint, sml-asn1, sml-pem, sml-crypto,
+   sml-aes, sml-chacha20, sml-aead, sml-kdf, sml-x25519, sml-rsa, sml-x509)
+   each exactly once, then the TLS sources.
+
+   The dependency DAG has several diamonds (sml-codec is needed by sml-pem,
+   sml-crypto, sml-rsa, sml-tls; sml-bigint by sml-asn1 and sml-rsa; sml-rsa
+   by sml-x509 and sml-tls). Each shared dep is included along a single path
+   so there are no duplicate structure definitions:
+
+     codec -> {pem, crypto, rsa, tls}    (codec loaded first, once)
+     bigint -> {asn1, rsa}               (bigint loaded once)
+     aes/chacha20 -> aead                (loaded once each)
+     crypto(hmac) -> kdf                 (crypto loaded once)
+     rsa -> x509                         (rsa loaded once, pulls asn1/pem/codec)
+
+   The vendored dep sources are brought in WITHOUT a `local` wrapper so the
+   test suite and examples can use Sha256 / Hmac / Aead / X25519 / Kdf / Rsa
+   / X509 alongside Tls. *)
+
+$(SML_LIB)/basis/basis.mlb
+
+(* 1. sml-codec: Base16/64, CRC32, SHA-1/256/512. The leaf of the codec DAG. *)
+../sml-codec/sources.mlb
+
+(* 2. sml-bigint: arbitrary-precision integers, no deps. *)
+../sml-bigint/sources.mlb
+
+(* 3. sml-asn1: DER, depends on BigInt (already loaded). *)
+../sml-asn1/asn1.sig
+../sml-asn1/asn1.sml
+
+(* 4. sml-pem: PEM codec, depends on sml-codec (already loaded). *)
+../sml-pem/pem.sig
+../sml-pem/pem.sml
+
+(* 5. sml-crypto: HMAC / PBKDF2 / Token, depends on sml-codec (loaded). *)
+../sml-crypto/hmac.sig
+../sml-crypto/hmac.sml
+../sml-crypto/pbkdf2.sig
+../sml-crypto/pbkdf2.sml
+../sml-crypto/token.sig
+../sml-crypto/token.sml
+
+(* 6. sml-aes / sml-chacha20: standalone block/stream ciphers. *)
+../sml-aes/aes.sig
+../sml-aes/aes.sml
+../sml-chacha20/chacha20.sig
+../sml-chacha20/chacha20.sml
+
+(* 7. sml-aead: AEAD facade over AES-GCM + ChaCha20-Poly1305. *)
+../sml-aead/aead.sig
+../sml-aead/aead.sml
+
+(* 8. sml-kdf: HKDF + scrypt, depends on Hmac (already loaded). *)
+../sml-kdf/kdf.sig
+../sml-kdf/kdf.sml
+
+(* 9. sml-x25519: Curve25519 DH, standalone. *)
+../sml-x25519/x25519.sig
+../sml-x25519/x25519.sml
+
+(* 10. sml-rsa: RSA-PSS, depends on Asn1/BigInt/Pem/Codec (all loaded). *)
+../sml-rsa/rsa.sig
+../sml-rsa/rsa.sml
+
+(* 11. sml-x509: X.509 cert parser, depends on Rsa (loaded). *)
+../sml-x509/x509.sig
+../sml-x509/x509.sml
+
+(* 12. sml-tls: TLS 1.3, the library itself. *)
+tls.sig
+tls.sml
+
+(* 13. Track stubs (Phase 0 interface freeze). These reference TlsRecord /
+       TlsAlert / TlsHandshake types defined in tls.sml, so they MUST come
+       after tls.sml. Bodies are `raise Fail "todo: A1|A2|A3"`; the
+       per-track subagents fill them in. The J1 integrator later wires
+       them into TlsClient.step / TlsServer.step. *)
+recordprotect.sig
+recordprotect.sml
+certverify.sig
+certverify.sml
+extensions.sig
+extensions.sml

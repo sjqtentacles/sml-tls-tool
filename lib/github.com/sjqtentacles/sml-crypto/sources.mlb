@@ -1,0 +1,13 @@
+(* Source files for sml-crypto, in dependency order. Pulls in the vendored
+   sml-codec sources (SHA-256 + Base64/Base16) it builds on. *)
+
+$(SML_LIB)/basis/basis.mlb
+
+../sml-codec/sources.mlb
+
+hmac.sig
+hmac.sml
+pbkdf2.sig
+pbkdf2.sml
+token.sig
+token.sml

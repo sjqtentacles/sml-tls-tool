@@ -1,0 +1,8 @@
+(* socket_shim.mlb -- top-level CLI: pure sml-tls + socket shim + main.
+   Paths are relative to this MLB file (in cli/). *)
+$(SML_LIB)/basis/basis.mlb
+$(SML_LIB)/basis/unsafe.mlb
+../lib/github.com/sjqtentacles/sml-tls/sources.mlb
+../src/socket_shim.sig
+../src/socket_shim.sml
+socket_main.sml
