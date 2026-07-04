@@ -98,9 +98,15 @@ struct
         serverName       = (case OS.Process.getEnv "TLS_SNI" of
                                 SOME s => s | NONE => host),
         trustStore       = envTrustStore (),
-        now              = (case Option.mapPartial Int.fromString
+        (* Parse TLS_NOW via IntInf + fixed 32-bit bound: an oversized value
+           yields the default 0 rather than raising Overflow under MLton's
+           32-bit int (Poly/ML's 63-bit int would accept it) -- identical on
+           both compilers. *)
+        now              = (case Option.mapPartial IntInf.fromString
                                    (OS.Process.getEnv "TLS_NOW") of
-                                SOME n => n | NONE => 0),
+                                SOME n => if n >= ~2147483648 andalso n <= 2147483647
+                                          then IntInf.toInt n else 0
+                              | NONE => 0),
         sigAlgs          = [TlsHandshake.sigRsaPssRsaSha256]
       }
       val (st0, chBytes) = TlsClient.startHandshake cfg

@@ -99,8 +99,14 @@ struct
         | go ("-server" :: rest) a = go rest (setRole a Server)
         | go ("-client" :: rest) a = go rest (setRole a Client)
         | go ("-port" :: p :: rest) a =
-            (case Int.fromString p of
-                 SOME n => go rest (setPort a n)
+            (* Parse via IntInf + fixed 32-bit bound so an oversized -port fails
+               cleanly rather than raising Overflow under MLton's 32-bit int
+               (Poly/ML's 63-bit int would accept it) -- keeps behaviour
+               identical across compilers. *)
+            (case IntInf.fromString p of
+                 SOME n => if n >= 0 andalso n <= 2147483647
+                           then go rest (setPort a (IntInf.toInt n))
+                           else raise Shim ("bad -port: " ^ p)
                | NONE => raise Shim ("bad -port: " ^ p))
         | go ("-min-version" :: v :: rest) a =
             go rest (setMin a (parseVersion v))
