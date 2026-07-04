@@ -346,8 +346,9 @@ struct
   (* ----- conversions ----- *)
 
   (* Conversions go through base-2^16 chunks, which fit the host [Int] on every
-     platform (32-bit MLton as well as Poly/ML's arbitrary-precision Int),
-     while the limbs themselves remain base-2^32. *)
+     platform (32-bit MLton as well as Poly/ML's 63-bit Int -- both fixed-width;
+     only IntInf is arbitrary precision), while the limbs themselves remain
+     base-2^32. *)
 
   fun fromInt n =
     if n = 0 then zeroB
@@ -686,7 +687,11 @@ struct
     if k < 0 then raise Domain
     else let val BI (s, m) = n in mk (s, shlBits (m, k)) end
 
-  (* Arithmetic (floored) right shift, agreeing with IntInf.~>>. *)
+  (* Arithmetic (floored) right shift: `shr (n, k) = floor (n / 2^k)`, i.e.
+     `IntInf.div (n, 2^k)`. This is the correct sign-extending shift and matches
+     MLton's `IntInf.~>>`; note Poly/ML 5.9.2's `IntInf.~>>` is buggy for large
+     negatives (it truncates toward zero), so this implementation is the
+     portable, correct one. *)
   fun shrB (n, k) =
     if k < 0 then raise Domain
     else
