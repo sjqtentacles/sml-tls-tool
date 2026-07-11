@@ -1,0 +1,92 @@
+name: CI
+
+# This is an IMPURE tool (real TCP sockets, subprocesses, AFL stdin) -- see
+# README.md. CI does not open a real connection or run a fuzz campaign. It
+# builds the CLI binaries under MLton (compile-only, proves the shims still
+# link against the current sml-tls) and runs the genuinely pure,
+# deterministic test suite (ByteVec + BogoArgs, see test/test.sml) under
+# both compilers, gated on byte-identical output like every other repo in
+# the fleet.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  POLYML_VERSION: "5.9.2"
+
+jobs:
+  mlton:
+    name: MLton (build shims + run pure-surface tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MLton
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mlton
+      - name: Build the CLI shims (compile-only)
+        run: make bin/socket_shim bin/bogo_shim
+      - name: Run tests
+        run: make test
+      - name: Capture raw output
+        run: ./bin/test-mlton > test-out.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: out-mlton
+          path: test-out.txt
+
+  polyml:
+    name: Poly/ML (test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The Ubuntu apt package is Poly/ML 5.7.1 (2017); build a current
+      # Poly/ML from source instead, and cache the install.
+      - name: Cache Poly/ML
+        id: cache-polyml
+        uses: actions/cache@v4
+        with:
+          path: /opt/polyml
+          key: polyml-${{ env.POLYML_VERSION }}-${{ runner.os }}
+      - name: Build Poly/ML ${{ env.POLYML_VERSION }}
+        if: steps.cache-polyml.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgmp-dev
+          curl -fsSL "https://github.com/polyml/polyml/archive/refs/tags/v${POLYML_VERSION}.tar.gz" -o polyml.tar.gz
+          tar xzf polyml.tar.gz
+          cd "polyml-${POLYML_VERSION}"
+          ./configure --prefix=/opt/polyml
+          make -j"$(nproc)"
+          make install
+      - name: Add Poly/ML to PATH
+        run: |
+          echo "/opt/polyml/bin" >> "$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=/opt/polyml/lib:${LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+      - name: Run tests
+        run: make test-poly
+      - name: Capture raw output
+        run: ./bin/test-poly > test-out.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: out-poly
+          path: test-out.txt
+
+  byte-identical:
+    name: Byte-identical output
+    runs-on: ubuntu-latest
+    needs: [mlton, polyml]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: out-mlton
+          path: mlton
+      - uses: actions/download-artifact@v4
+        with:
+          name: out-poly
+          path: poly
+      - name: Diff test output
+        run: diff mlton/test-out.txt poly/test-out.txt

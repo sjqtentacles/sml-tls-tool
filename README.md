@@ -64,6 +64,9 @@ make bin/socket_shim          # just the TCP driver CLI
 make bin/bogo_shim            # just the BoGo shim CLI
 make afl-all                  # just the AFL harnesses
 make corpus                   # regenerate fuzz/corpus/ from RFC 8448
+make test                     # run the pure-surface test suite under MLton
+make test-poly                # ...under Poly/ML
+make all-tests                # both compilers + a byte-identical output gate
 make clean                    # remove bin/ and out/
 ```
 
@@ -71,6 +74,24 @@ All harnesses compile today against the Phase-0 stubs of `TlsRecordProtect`
 and `TlsExtensions` (which `raise Fail "todo: A1"` / `"todo: A3"`); the
 AFL harnesses will therefore crash on every input until those tracks
 land, which is exactly what AFL should surface at J2.
+
+## Tests
+
+This repo is IMPURE by design (real sockets, subprocesses, AFL stdin), so
+most of it has no deterministic test surface — the TLS protocol logic lives
+in, and is tested by, the pure `sml-tls` core. What genuinely is pure and
+deterministic here is the transport-adjacent parsing this tool owns:
+
+- **`src/bytevec.sig`/`.sml`** — the `string <-> Word8Vector.vector`
+  conversion the socket API needs.
+- **`src/bogoargs.sig`/`.sml`** — parsing of BoGo's `-server -port 1234
+  -expect-handshake-success ...` command-line flags.
+
+`test/test.sml` (42 assertions) exercises both exhaustively — round-trips
+over all 256 byte values, the documented 32-bit `-port` overflow behavior,
+every recognised flag alone and in combination, and unrecognised-flag
+stashing — and is held to the same dual-compiler byte-identical bar as
+every other repo in the fleet (`make all-tests`).
 
 ## Running each harness
 

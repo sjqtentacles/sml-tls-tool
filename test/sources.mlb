@@ -1,0 +1,14 @@
+(* Tests exercise only the pure, deterministic surface of this impure tool
+ * repo: byte<->vector conversion and BoGo flag parsing. No socket, TLS, or
+ * AFL code is pulled in -- the protocol logic is tested in sml-tls itself. *)
+$(SML_LIB)/basis/basis.mlb
+
+../src/bytevec.sig
+../src/bytevec.sml
+../src/bogoargs.sig
+../src/bogoargs.sml
+
+harness.sml
+test.sml
+entry.sml
+main.sml

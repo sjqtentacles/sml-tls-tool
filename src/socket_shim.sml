@@ -17,15 +17,9 @@ structure SocketShim :> SOCKET_SHIM =
 struct
   exception Shim of string
 
-  (* string <-> Word8Vector for the socket API. sml-tls uses one char per
-     byte, 0-255, matching the rest of the sjqtentacles family. *)
-  fun toVec s =
-    Word8Vector.tabulate (String.size s, fn i =>
-      Word8.fromInt (Char.ord (String.sub (s, i))))
-
-  fun fromVec v =
-    CharVector.tabulate (Word8Vector.length v, fn i =>
-      Char.chr (Word8.toInt (Word8Vector.sub (v, i))))
+  (* string <-> Word8Vector for the socket API; see bytevec.sig. *)
+  val toVec = ByteVec.toVec
+  val fromVec = ByteVec.fromVec
 
   fun resolve host =
     case NetHostDB.getByName host of
