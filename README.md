@@ -1,5 +1,7 @@
 # sml-tls-tool
 
+[![CI](https://github.com/sjqtentacles/sml-tls-tool/actions/workflows/ci.yml/badge.svg)](https://github.com/sjqtentacles/sml-tls-tool/actions/workflows/ci.yml)
+
 IMPURE, quarantined conformance and fuzz harnesses for
 [`sml-tls`](https://github.com/sjqtentacles/sml-tls). This is a TOOL,
 not a pure library: it opens real TCP sockets, spawns subprocesses, and
